@@ -1,1 +1,1 @@
-Printf - team project by: Laby Owolabi and Joshua Monday.
+Printf - team project by: Laby Owolabi and Joshua Monday
