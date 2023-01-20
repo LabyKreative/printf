@@ -1,68 +1,50 @@
 #include "main.h"
 
-void print_buffer(char buffer[], int *buff_ind);
-
 /**
- * _printf - a function that prints function.
- * @format: format.
- * Return: the number of characters printed.
+ * _printf - a function that prints formatted data to stdout.
+ * @format: string container of the format to print.
+ * Return: EXIT_SUCCESS.
  */
-
-int _printf(const char *format, ...)
+int _printf(char *format, ...)
 {
-	int x, printed = 0, printed_chars = 0;
-	int flags, width, precision, size, buff_ind = 0;
-	va_list list;
-	char buffer[BUFF_SIZE];
+	int written = 0, (*structype)(char *, va_list);
+	char q[3];
+	va_list pa;
 
 	if (format == NULL)
 		return (-1);
-
-	va_start(list, format);
-
-	for (x = 0; format && format[x] != '\0'; x++)
+	q[2] = '\0';
+	va_start(pa, format);
+	_putchar(-1);
+	while (format[0])
 	{
-		if (format[x] != '%')
+		if (format[0] == '%')
 		{
-			buffer[buff_ind++] = format[x];
-			if (buff_ind == BUFF_SIZE)
-				print_buffer(buffer, &buff_ind);
-			/* write(1, &format[x], 1);*/
-			printed_chars++;
+			structype = driver(format);
+			if (structype)
+			{
+				q[0] = '%';
+				q[1] = format[1];
+				written += structype(q, pa);
+			}
+			else if (format[1] != '\0')
+			{
+				written += _putchar('%');
+				written += _putchar(format[1]);
+			}
+			else
+			{
+				written += _putchar('%');
+				break;
+			}
+			format += 2;
 		}
 		else
 		{
-			print_buffer(buffer, &buff_ind);
-			flags = get_flags(format, &x);
-			width = get_width(format, &x, list);
-			precision = get_precision(format, &x, list);
-			size = get_size(format, &x);
-			++x;
-			printed = handle_print(format, &x, list, buffer,
-				flags, width, precision, size);
-			if (printed == -1)
-				return (-1);
-			printed_chars += printed;
+			written += _putchar(format[0]);
+			format++;
 		}
 	}
-
-	print_buffer(buffer, &buff_ind);
-
-	va_end(list);
-
-	return (printed_chars);
-}
-
-/**
- * print_buffer - a function that prints the contents of the buffer
- * if it exist.
- * @buffer: characters array.
- * @buff_ind: next character index, represents the length.
- */
-void print_buffer(char buffer[], int *buff_ind)
-{
-	if (*buff_ind > 0)
-		write(1, &buffer[0], *buff_ind);
-
-	*buff_ind = 0;
+	_putchar(-2);
+	return (written);
 }
