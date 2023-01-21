@@ -1,120 +1,121 @@
-#include "main.h"
+#ifndef MAIN_H
+#define MAIN_H
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdarg.h>
+#include <stdio.h>
+
 /**
- * _printf - Recreate stdio.h's printf
- * @format: Formatted string to write to stdout
- *
- * Return: Number of chars written
+ * struct buffer - buffer structure for our implimentation of printf
+ * @buf: buffer to write characters
+ * @tmpbuf: tmp buffer to write to before putting in buffer
+ * @format: the string passed to our printf
+ * @ap: the variadic address point
+ * @bp: the current point in the buffer
+ * @tp: the current point in the tmp buffer
+ * @fp: the current point in the format
+ * @printed: the number of chars printed from _write
  */
-int _printf(const char *format, ...)
+typedef struct buffer
 {
-	/* Create buffer structure b_r and initialise */
-	buffer b_r;
-
-	_init_buffer(&b_r, format);
-	va_start(b_r.ap, format);
-
-	/* Main loop to create buffer from format string */
-	while (b_r.format[b_r.fp] != '\0')
-	{
-		_copy(&b_r);
-		if (b_r.format[b_r.fp] != '\0')
-			_parse(&b_r);
-	}
-
-	/* Write remaining buffer to stdout */
-	if (b_r.bp > 0)
-		write(1, b_r.buf, b_r.bp);
-	b_r.printed += b_r.bp;
-
-	va_end(b_r.ap);
-	free(b_r.buf);
-	free(b_r.tmpbuf);
-	return (b_r.printed);
-}
+	char *buf;
+	char *tmpbuf;
+	const char *format;
+	va_list ap;
+	int bp;
+	int tp;
+	int fp;
+	unsigned int printed;
+} buffer;
 /**
- * _copy - directly copy from format to buffer
- * @b_r: the buffer structure
+ * struct tags - Format tags after %
+ * @spec: the specifier
+ * @length: the length
+ * @prec: the precision
+ * @width: the width
+ * @flags: the flags
  */
-void _copy(buffer *b_r)
+typedef struct tags
 {
-	while (b_r->format[b_r->fp] != '%' && b_r->format[b_r->fp] != '\0')
-		_write(b_r, b_r->format[b_r->fp++]);
-
-}
+	char spec;
+	char length;
+	int prec;
+	int width;
+	char flags[6];
+} tags;
 /**
- * _parse - take string from % and parse tags into correct string for buffer
- * @b_r: the buffer structure
+ * struct parse_table - Table used for parsing the %s
+ * @c: character found
+ * @level: which level from 5 (specification) to 1 (flags)
+ * @spec_func: function to put the matched specification into the buffer
  */
-void _parse(buffer *b_r)
+typedef struct parse_table
 {
-	int i;
-	tags t;
-	parse_table table[] = {
-	{'d', 5, _spec_d}, {'i', 5, _spec_d}, {'c', 5, _spec_c},
-	{'s', 5, _spec_s}, {'u', 5, _spec_u}, {'o', 5, _spec_o},
-	{'x', 5, _spec_x}, {'X', 5, _spec_X}, {'b', 5, _spec_b},
-	{'S', 5, _spec_S}, {'p', 5, _spec_p}, {'R', 5, _spec_R},
-	{'r', 5, _spec_r}, {'%', 5, _spec_pct},
-	/* no specifier found */ {'\0', 5, _spec_nil},
+	char c;
+	int level;
+	void (*spec_func)();
+} parse_table;
+/* printf functions */
+void _copy(buffer *);
+int _printf(const char *format, ...);
+void _parse(buffer *b_r);
+void _init_tag(tags *t);
+void _init_buffer(buffer *b_r, const char *format);
+void _spec_c(buffer *b_r, tags *t);
+void _spec_s(buffer *b_r, tags *t);
+void _spec_nil(buffer *b_r);
+void _spec_pct(buffer *b_r);
+void _spec_p(buffer *b_r, tags *t);
+void _spec_r(buffer *b_r, tags *t);
+void _spec_S(buffer *b_r, tags *t);
+void _spec_o(buffer *b_r, tags *t);
+void _spec_u(buffer *b_r, tags *t);
+void _spec_x(buffer *b_r, tags *t);
+void _spec_X(buffer *b_r, tags *t);
+void _spec_b(buffer *b_r, tags *t);
+void _spec_d(buffer *b_r, tags *t);
+void _spec_R(buffer *b_r, tags *t);
+void _error_(void);
+int __atoi(const char *s, int n);
+/* _write_to_buffer functions */
+void _write(buffer *b_r, char c);
+void _write_str(buffer *b_r, char *s);
+void _write_tmpbuf(buffer *b_r);
+void _parse_tag(buffer *b_r, tags *t, parse_table *table);
+int str_len(char *str);
+void _revstr(char *s);
+char *_str_whelp(tags *t, char *hold, int hold_len);
+char *_to_hex_unreadable(char *hold);
+void _to_rot13(char *s);
+/* to string functions */
+char *_int_to_str(long int n);
+char *_int_to_hexstr(long int n);
+char *_int_to_caphexstr(long int n);
+char *_int_to_octstr(long int n);
+char *_int_to_binstr(long int n);
+/* unsigned to string functions */
+char *_uint_to_str(unsigned long int n);
+char *_uint_to_hexstr(unsigned long int n);
+char *_uint_to_caphexstr(unsigned long int n);
+char *_uint_to_octstr(unsigned long int n);
+char *_uint_to_binstr(unsigned long int n);
+/* printf_flag_helper functions */
+int _isFlagMinus(tags *t);
+int _isFlagPlus(tags *t);
+int _isFlagSpace(tags *t);
+int _isFlagHashtag(tags *t);
+int _isFlagZero(tags *t);
+/* parse helper functions */
+void _found_spec(buffer *b_r, tags *t, parse_table *table, int i);
+void _found_length(buffer *b_r, tags *t, parse_table *table, int i);
+void _found_prec(buffer *b_r, tags *t, parse_table *table, int i);
+void _found_width(buffer *b_r, tags *t);
+void _found_flag(buffer *b_r, tags *t, parse_table *table, int i);
+/*spec num helper function*/
+void _spec_num_help(buffer *b_r, tags *t, char *num_str, int minus);
+int num_len(int n);
+void get_sign(tags *t, int minus, char *front);
+char *check_prec(char *tmp_str, char *num_str, tags *t, int s_len);
+void _out_of_time(char *buf_str, char *tmp_str, char *front, tags *t);
 
-	{'h', 4, error}, {'l', 4, error},
-	{'.', 3, error},
-	{'1', 2, error}, {'2', 2, error}, {'3', 2, error},
-	{'4', 2, error}, {'5', 2, error}, {'6', 2, error},
-	{'7', 2, error}, {'8', 2, error}, {'9', 2, error},
-	{'-', 1, error}, {'+', 1, error}, {' ', 1, error},
-	{'#', 1, error}, {'0', 1, error},
-	/* End of Table */ {'\0', -1, error}
-	};
-
-	/* We only parse at %! */
-	if (b_r->format[b_r->fp] != '%')
-		write(1, "Error: Parsing when not at '%'\n", 31);
-	b_r->tp = 0;
-	b_r->tmpbuf[b_r->tp++] = '%';
-	b_r->fp++;
-
-	_init_tag(&t);
-	_parse_tag(b_r, &t, table);
-
-	/* Call the specifier function matching the specifier found */
-	i = 0;
-	while (table[i].level == 5)
-	{
-		if (table[i].c == t.spec)
-			table[i].spec_func(b_r, &t);
-		i++;
-	}
-	i = 0;
-}
-/**
- * _parse_tag - Build out the tags struct with tags found
- * @b_r: the buffer structure
- * @table: Parsing table to read the '%_' from format
- * @t: tags to send to our specifier function
- */
-void _parse_tag(buffer *b_r, tags *t, parse_table *table)
-{
-	int depth, i, j;
-
-	depth = i = j = 0;
-	while (table[i].level > depth || table[i].level == 1)
-	{
-		if (table[i].c == b_r->format[b_r->fp])
-		{
-			depth = table[i].level;
-			if (depth == 5)
-				_found_spec(b_r, t, table, i);
-			else if (depth == 4)
-				_found_length(b_r, t, table, i);
-			else if (depth == 3)
-				_found_prec(b_r, t, table, i);
-			else if (depth == 2)
-				_found_width(b_r, t);
-			else if (depth == 1)
-				_found_flag(b_r, t, table, i);
-			i = -1;
-		}
-		i++;
-	}
-}
+#endif/*MAIN_H*/
