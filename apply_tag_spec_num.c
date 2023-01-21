@@ -1,4 +1,4 @@
-#include "holberton.h"
+#include "main.h"
 /**
  * _spec_num_help - applies the appropriate tags to a number specificer
  * @b_r: a pointer to the struct buffer
